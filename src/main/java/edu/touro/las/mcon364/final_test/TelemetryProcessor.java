@@ -1,6 +1,14 @@
 package edu.touro.las.mcon364.final_test;
 
+import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * TelemetryProcessor – concurrent sensor-data pipeline
@@ -32,6 +40,17 @@ import java.util.DoubleSummaryStatistics;
 public class TelemetryProcessor {
 
     // ── declare whatever fields you need ─────────────────────────────────────
+    private final BlockingQueue<TelemetryEvent> queue = new LinkedBlockingQueue<>();
+
+    private final List<Thread> workers = new ArrayList<>();
+
+    private final AtomicInteger totalProcessed = new AtomicInteger(0);
+
+    // no sure abt this
+    private final ConcurrentHashMap<String, TelemetryEvent> events = new ConcurrentHashMap<>();
+
+    // volatile to ensure all threads see the latest value of running
+    private volatile boolean running = false;
 
     // ── public API ────────────────────────────────────────────────────────────
 
@@ -45,6 +64,9 @@ public class TelemetryProcessor {
      */
     public void submit(TelemetryEvent event) {
         //TODO - implement this method
+        if (running) {
+            queue.offer(event);
+        }
     }
 
     /**
@@ -54,6 +76,30 @@ public class TelemetryProcessor {
      */
     public void start(int workerCount) {
         //TODO - implement this method
+        if (workerCount <= 0) {
+            throw new IllegalArgumentException("workerCount must be greater than 0");
+        }
+        running = true;
+        IntStream.range(0, workerCount).forEach(i -> {
+            Thread worker = new Thread(this::workerLoop);
+            worker.start();
+            workers.add(worker);
+        });
+    }
+    private void workerLoop() {
+//        // keep looping while either accepting new work or unprocessed work is waiting
+//        while (running || !queue.isEmpty()) {
+//            try {
+//                LogMessage message = queue.poll(100, TimeUnit.MILLISECONDS);
+//                if (message != null) {
+//                    process(message);
+//                }
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//                throw new RuntimeException(e);
+//            }
+//
+//        }
     }
 
     /**
@@ -61,15 +107,24 @@ public class TelemetryProcessor {
      * @throws InterruptedException if the calling thread is interrupted while waiting
      */
     public void stop() throws InterruptedException {
-        //TODO - implement this method
+        // implement this method
+        running = false; // workers should stop accepting new work
+        workers.forEach(w -> {
+            try {
+                w.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
      * Return the total number of events that have been fully processed.
      */
     public int getTotalProcessed() {
-        //TODO - implement this method
-        return 0;
+        // implement this method
+        return totalProcessed.get();
     }
 
     /**

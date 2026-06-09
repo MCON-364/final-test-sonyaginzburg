@@ -1,6 +1,7 @@
 package edu.touro.las.mcon364.final_test;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.*;
 
 /**
@@ -27,8 +28,8 @@ import java.util.stream.*;
  */
 public class ProductReviewAnalyzer {
 
-    //TODO - uncomment this field and initialize it in the constructor to store categories.
-    //private final List<String> categories;
+    //uncomment this field and initialize it in the constructor to store categories.
+    private final List<String> categories;
 
     /**
      * Store the category tags that this analyzer will examine.
@@ -36,7 +37,8 @@ public class ProductReviewAnalyzer {
      * If the input list is null, throw an IllegalArgumentException.
      */
     public ProductReviewAnalyzer(List<String> categories) {
-      //TODO - implement this constructor
+      // implement this constructor
+        this.categories = List.copyOf(Objects.requireNonNull(categories));
     }
 
     /**
@@ -45,9 +47,12 @@ public class ProductReviewAnalyzer {
      *
      * @return sorted frequency map
      */
-    public Map<String, Long> buildCategoryFrequencyMap() {
-        //TODO - implement this method
-        return null;
+    public TreeMap<String, Long> buildCategoryFrequencyMap() {
+        //TODO - implement this method buildCategoryFrequencyMap() returns a TreeMap<String, Long> where every key
+        // *   is a unique category and every value is how many reviews that category received.
+
+        Map<String, Long> fmap = categories.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return new TreeMap<>(fmap);
     }
 
     /**
@@ -57,8 +62,24 @@ public class ProductReviewAnalyzer {
      * @return list of category names, most reviewed first
      */
     public List<String> getTopNCategories(int n) {
-        //TODO - implement this method
-        return null;
+        //TODO - implement this method  // using already built freq map
+        //        TreeMap<String, Long> freq = buildFrequencyMap();
+        //        // entry set bc u need key and value - gives (word, count) pairs
+        //        return freq.entrySet().stream()
+        //                // sort pairs by coun (getValue) and then reverse so that largest comes first (usually smallest first)
+        //                .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
+        //                // keep first n entries
+        //                .limit(n)
+        //                // now we need to return the words so map and get the key/word
+        //                .map(Map.Entry::getKey)
+        //                .toList();
+        TreeMap<String, Long> fmap = buildCategoryFrequencyMap();
+        return fmap.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
+                .limit(n)
+                .map(Map.Entry::getKey)
+                .toList();
+
     }
 
     /**
@@ -68,8 +89,11 @@ public class ProductReviewAnalyzer {
      * @return sorted list of matching category names
      */
     public List<String> getCategoriesStartingWith(char prefix) {
-        //TODO - implement this method
-        return null;
+        //implement this method
+        return buildCategoryFrequencyMap().keySet()
+                .stream()
+                .filter(c -> c.startsWith(String.valueOf(prefix)))
+                .toList();
     }
 
     /**
@@ -80,7 +104,14 @@ public class ProductReviewAnalyzer {
      * @return Optional containing the most reviewed category in range, or empty if none
      */
     public Optional<String> getMostReviewedInRange(String from, String to) {
-        //TODO - implement this method
-        return Optional.empty();
+        //implement this method
+
+
+        return buildCategoryFrequencyMap()
+                .subMap(from,true, to , true)
+                .entrySet()
+                .stream()
+                .max(Comparator.comparing(Map.Entry::getValue))
+                .map(Map.Entry::getKey);
     }
 }
