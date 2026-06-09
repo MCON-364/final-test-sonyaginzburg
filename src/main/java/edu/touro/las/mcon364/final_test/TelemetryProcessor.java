@@ -3,11 +3,9 @@ package edu.touro.las.mcon364.final_test;
 import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 /**
@@ -42,15 +40,15 @@ public class TelemetryProcessor {
     // ── declare whatever fields you need ─────────────────────────────────────
     private final BlockingQueue<TelemetryEvent> queue = new LinkedBlockingQueue<>();
 
-    private final List<Thread> workers = new ArrayList<>();
-
     private final AtomicInteger totalProcessed = new AtomicInteger(0);
 
     // no sure abt this
-    private final ConcurrentHashMap<String, TelemetryEvent> events = new ConcurrentHashMap<>();
+    private final AtomicReference<DoubleSummaryStatistics> events =  new AtomicReference<>(new DoubleSummaryStatistics());
 
     // volatile to ensure all threads see the latest value of running
-    private volatile boolean running = false;
+    private volatile boolean running = true;
+
+    private ExecutorService executorService;
 
     // ── public API ────────────────────────────────────────────────────────────
 
@@ -63,7 +61,7 @@ public class TelemetryProcessor {
      * @throws IllegalArgumentException if event is null
      */
     public void submit(TelemetryEvent event) {
-        //TODO - implement this method
+        // implement this method
         if (running) {
             queue.offer(event);
         }
@@ -75,48 +73,26 @@ public class TelemetryProcessor {
      * @throws IllegalArgumentException if workerCount ≤ 0
      */
     public void start(int workerCount) {
-        //TODO - implement this method
+        // implement this method
         if (workerCount <= 0) {
             throw new IllegalArgumentException("workerCount must be greater than 0");
         }
-        running = true;
         IntStream.range(0, workerCount).forEach(i -> {
-            Thread worker = new Thread(this::workerLoop);
-            worker.start();
-            workers.add(worker);
+            executorService.submit(this::workerLoop);
         });
     }
-    private void workerLoop() {
-//        // keep looping while either accepting new work or unprocessed work is waiting
-//        while (running || !queue.isEmpty()) {
-//            try {
-//                LogMessage message = queue.poll(100, TimeUnit.MILLISECONDS);
-//                if (message != null) {
-//                    process(message);
-//                }
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//                throw new RuntimeException(e);
-//            }
-//
-//        }
-    }
+
 
     /**
      * Stop processing events.
      * @throws InterruptedException if the calling thread is interrupted while waiting
      */
     public void stop() throws InterruptedException {
-        // implement this method
-        running = false; // workers should stop accepting new work
-        workers.forEach(w -> {
-            try {
-                w.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            }
-        });
+        // ?
+    }
+
+    private void process(TelemetryEvent event) {
+// ?
     }
 
     /**
@@ -136,7 +112,23 @@ public class TelemetryProcessor {
      *
      */
     public DoubleSummaryStatistics getStats() {
-        //TODO - implement this method
-        return null;
+        // implement this method
+        DoubleSummaryStatistics snapshot = new DoubleSummaryStatistics();
+              snapshot.combine(events.get());
+              return snapshot;
+    }
+
+    private void workerLoop() {
+        while (running || !queue.isEmpty()) {
+            try {
+                TelemetryEvent e = queue.poll(100, java.util.concurrent.TimeUnit.MILLISECONDS);
+                if (e != null) {
+                    process(e);
+                }
+            } catch (Exception e) {
+                //execptions
+                e.printStackTrace();
+            }
+        }
     }
 }

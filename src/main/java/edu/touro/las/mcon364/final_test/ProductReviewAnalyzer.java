@@ -62,17 +62,6 @@ public class ProductReviewAnalyzer {
      * @return list of category names, most reviewed first
      */
     public List<String> getTopNCategories(int n) {
-        //TODO - implement this method  // using already built freq map
-        //        TreeMap<String, Long> freq = buildFrequencyMap();
-        //        // entry set bc u need key and value - gives (word, count) pairs
-        //        return freq.entrySet().stream()
-        //                // sort pairs by coun (getValue) and then reverse so that largest comes first (usually smallest first)
-        //                .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
-        //                // keep first n entries
-        //                .limit(n)
-        //                // now we need to return the words so map and get the key/word
-        //                .map(Map.Entry::getKey)
-        //                .toList();
         TreeMap<String, Long> fmap = buildCategoryFrequencyMap();
         return fmap.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry<String, Long>:: getValue).reversed())
