@@ -5,6 +5,7 @@ import edu.touro.las.mcon364.final_test.SupportTicket;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -27,8 +28,8 @@ import java.util.stream.Collectors;
  * - Do not use loops.
  */
 public class IncidentAnalyzer {
-    //TODO - uncomment this field and initialize it in the constructor to store the incidents passed in.
-    //private final List<SupportTicket> incidents;
+    // uncomment this field and initialize it in the constructor to store the incidents passed in.
+    private final List<SupportTicket> incidents;
 
     /**
      * Store the incidents that this analyzer will examine.
@@ -36,7 +37,8 @@ public class IncidentAnalyzer {
      * external modification of the internal state of this class. If the input list is null, throw an NullPointerException.
      */
     public IncidentAnalyzer(List<SupportTicket> incidents) {
-       //TODO - implement this constructor
+       //- implement this constructor
+        this.incidents = List.copyOf(Objects.requireNonNull(incidents));
     }
 
     /**
@@ -44,7 +46,7 @@ public class IncidentAnalyzer {
      */
     public long getClosedCount() {
         //TODO - implement this method
-        return -1;
+        return incidents.stream().filter(SupportTicket::resolved).count();
     }
 
     /**
@@ -54,22 +56,32 @@ public class IncidentAnalyzer {
      */
     public double getAverageTimeToClose() {
         //TODO - implement this method
-        return 0.0;
+        return incidents.stream()
+                .filter(SupportTicket::resolved)
+                .mapToDouble(SupportTicket::minutesToResolve)
+                .average()
+                .orElse(0.0);
     }
 
     /**
      * Return how many incidents belong to each category.
      */
     public Map<String, Long> getCountByCategory() {
-        //TODO - implement this method
-        return null;
+        //implement this method
+        return Map.copyOf(
+                incidents.stream()
+                        .collect(Collectors.groupingBy(SupportTicket::category, Collectors.counting()))
+        );
     }
 
     /**
      * Return open incidents that require immediate attention.
      */
     public List<SupportTicket> getCriticalOpenIncidents() {
-        //TODO - implement this method
-        return null;
+        // implement this method
+        return List.copyOf(incidents.stream()
+                .filter(t -> !t.resolved())
+                .filter(t -> t.priority() == Priority.HIGH)
+                .toList());
     }
 }
